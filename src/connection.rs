@@ -1,5 +1,6 @@
 use crate::config::{TlsCipherSuite, TlsConfig, TlsVerifier};
 use crate::handshake::{ClientHandshake, ServerHandshake};
+
 use crate::key_schedule::{KeySchedule, ReadKeySchedule, WriteKeySchedule};
 use crate::record::{ClientRecord, ServerRecord};
 use crate::record_reader::RecordReader;
@@ -13,10 +14,10 @@ use core::fmt::Debug;
 use embedded_io::Error as _;
 use rand_core::{CryptoRng, RngCore};
 
-use embedded_io::blocking::{Read as BlockingRead, Write as BlockingWrite};
+use embedded_io::{Read as BlockingRead, Write as BlockingWrite};
 
 #[cfg(feature = "async")]
-use embedded_io::asynch::{Read as AsyncRead, Write as AsyncWrite};
+use embedded_io_async::{Read as AsyncRead, Write as AsyncWrite};
 
 use crate::application_data::ApplicationData;
 // use crate::handshake::certificate_request::CertificateRequest;
@@ -330,9 +331,7 @@ fn respond_blocking<CipherSuite>(
 where
     CipherSuite: TlsCipherSuite,
 {
-    transport
-        .write_all(tx)
-        .map_err(|e| TlsError::Io(e.kind()))?;
+    transport.write_all(tx)?;
 
     key_schedule.write_state().increment_counter();
 
@@ -374,10 +373,7 @@ async fn respond<CipherSuite>(
 where
     CipherSuite: TlsCipherSuite,
 {
-    transport
-        .write_all(tx)
-        .await
-        .map_err(|e| TlsError::Io(e.kind()))?;
+    transport.write_all(tx).await?;
 
     key_schedule.write_state().increment_counter();
 

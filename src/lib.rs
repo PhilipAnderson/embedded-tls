@@ -31,7 +31,7 @@
 
 ```
 use embedded_tls::*;
-use embedded_io::adapters::FromTokio;
+use embedded_io_adapters::tokio_1::FromTokio;
 use rand::rngs::OsRng;
 use tokio::net::TcpStream;
 
@@ -57,6 +57,7 @@ async fn main() {
 */
 pub(crate) mod fmt;
 
+use embedded_io::WriteAllError;
 use parse_buffer::ParseError;
 pub mod alert;
 mod application_data;
@@ -123,6 +124,15 @@ pub enum TlsError {
     EncodeError,
     DecodeError,
     Io(embedded_io::ErrorKind),
+}
+
+impl<E: embedded_io::Error> From<WriteAllError<E>> for TlsError {
+    fn from(error: WriteAllError<E>) -> Self {
+        match error {
+            WriteAllError::WriteZero => Self::ConnectionClosed,
+            WriteAllError::Other(e) => Self::Io(e.kind()),
+        }
+    }
 }
 
 impl embedded_io::Error for TlsError {
